@@ -1,5 +1,8 @@
-# ARM向けUbuntuの最新安定版をベースイメージとして使用
-FROM ubuntu:latest
+# マルチアーキテクチャ対応のUbuntuベースイメージを使用
+FROM --platform=$BUILDPLATFORM ubuntu:latest
+
+# ARGを使用してビルド時のアーキテクチャを取得
+ARG TARGETARCH
 
 # 環境変数を設定
 ENV DEBIAN_FRONTEND=noninteractive
@@ -16,16 +19,24 @@ RUN apt-get update && apt-get install -y \
     python3-pip \
     && rm -rf /var/lib/apt/lists/*
 
-# ARM向けGo 1.21.3のインストール
-RUN wget https://go.dev/dl/go${GO_VERSION}.linux-arm64.tar.gz \
-    && tar -C /usr/local -xzf go${GO_VERSION}.linux-arm64.tar.gz \
-    && rm go${GO_VERSION}.linux-arm64.tar.gz
+# アーキテクチャに応じてGoをインストール
+RUN if [ "$TARGETARCH" = "arm64" ]; then \
+        wget https://go.dev/dl/go${GO_VERSION}.linux-arm64.tar.gz -O go.tar.gz; \
+    else \
+        wget https://go.dev/dl/go${GO_VERSION}.linux-amd64.tar.gz -O go.tar.gz; \
+    fi && \
+    tar -C /usr/local -xzf go.tar.gz && \
+    rm go.tar.gz
 
-# ARM向けAWS CLIのインストール
-RUN curl "https://awscli.amazonaws.com/awscli-exe-linux-aarch64.zip" -o "awscliv2.zip" \
-    && unzip awscliv2.zip \
-    && ./aws/install \
-    && rm -rf aws awscliv2.zip
+# アーキテクチャに応じてAWS CLIをインストール
+RUN if [ "$TARGETARCH" = "arm64" ]; then \
+        curl "https://awscli.amazonaws.com/awscli-exe-linux-aarch64.zip" -o "awscliv2.zip"; \
+    else \
+        curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"; \
+    fi && \
+    unzip awscliv2.zip && \
+    ./aws/install && \
+    rm -rf aws awscliv2.zip
 
 # AWS SAM CLIのインストール
 RUN pip3 install aws-sam-cli
