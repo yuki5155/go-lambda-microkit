@@ -1,0 +1,32 @@
+.
+|-- Dockerfile
+|-- LICENSE
+|-- README.md
+|-- memo.txt
+|-- sample-app
+|   |-- Makefile
+|   |-- README.md
+|   |-- events
+|   |   `-- event.json
+|   |-- hello-world
+|   |   |-- go.mod
+|   |   |-- go.sum
+|   |   |-- main.go
+|   |   `-- main_test.go
+|   |-- hello-world-post
+|   |   |-- cmd
+|   |   |   `-- main.go
+|   |   |-- go.mod
+|   |   |-- go.sum
+|   |   |-- models
+|   |   |   `-- request.go
+|   |   `-- tests
+|   |       `-- main_test.go
+|   |-- samconfig.toml
+|   `-- template.yaml
+`-- utils
+    |-- go.mod
+    |-- go.sum
+    `-- req_res.go
+
+8 directories, 21 files
