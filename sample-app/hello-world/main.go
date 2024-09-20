@@ -5,7 +5,10 @@ import (
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
+	"github.com/yuki5155/go-lambda-microkit/services"
 )
+
+var NewUserService = services.NewUserService
 
 func handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
 	var greeting string
@@ -16,6 +19,11 @@ func handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
 	} else {
 		greeting = fmt.Sprintf("Hello, %s!\n", sourceIP)
 	}
+
+	user := NewUserService()
+	username := user.GetUser()
+	email := user.GetEmail()
+	fmt.Printf("User: %s, Email: %s\n", username, email)
 
 	return events.APIGatewayProxyResponse{
 		Body:       greeting,
