@@ -4,17 +4,30 @@ import (
 	"testing"
 
 	"github.com/aws/aws-lambda-go/events"
+	"github.com/golang/mock/gomock"
+	"github.com/yuki5155/go-lambda-microkit/domains"
+	"github.com/yuki5155/go-lambda-microkit/mocks"
+	"github.com/yuki5155/go-lambda-microkit/services"
 )
 
+type mockServices struct {
+	userService *mocks.MockIUserService
+	// Add other service mocks here as needed
+}
+
 func TestHandler(t *testing.T) {
+	userDomain := domains.User{
+		Name:  "User",
+		Email: "Email",
+	}
 	testCases := []struct {
 		name          string
 		request       events.APIGatewayProxyRequest
 		expectedBody  string
 		expectedError error
+		setupMocks    func(*mockServices)
 	}{
 		{
-			// mock a request with an empty SourceIP
 			name: "empty IP",
 			request: events.APIGatewayProxyRequest{
 				RequestContext: events.APIGatewayProxyRequestContext{
@@ -23,11 +36,12 @@ func TestHandler(t *testing.T) {
 					},
 				},
 			},
-			expectedBody:  "Hello, world!\n",
-			expectedError: nil,
+			expectedBody: "Hello, world!\n",
+			setupMocks: func(m *mockServices) {
+				m.userService.EXPECT().GetUser().Return(userDomain, nil).Times(1)
+			},
 		},
 		{
-			// mock a request with a localhost SourceIP
 			name: "localhost IP",
 			request: events.APIGatewayProxyRequest{
 				RequestContext: events.APIGatewayProxyRequestContext{
@@ -36,13 +50,34 @@ func TestHandler(t *testing.T) {
 					},
 				},
 			},
-			expectedBody:  "Hello, 127.0.0.1!\n",
-			expectedError: nil,
+			expectedBody: "Hello, 127.0.0.1!\n",
+			setupMocks: func(m *mockServices) {
+				m.userService.EXPECT().GetUser().Return(userDomain, nil).Times(1)
+			},
 		},
 	}
 
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			mocks := &mockServices{
+				userService: mocks.NewMockIUserService(ctrl),
+				// Initialize other service mocks here
+			}
+
+			testCase.setupMocks(mocks)
+
+			// Replace the original NewUserService function
+			origNewUserService := NewUserService
+			NewUserService = func() services.IUserService {
+				return mocks.userService
+			}
+			defer func() { NewUserService = origNewUserService }()
+
+			// Add similar replacements for other services here
+
 			response, err := handler(testCase.request)
 			if err != testCase.expectedError {
 				t.Errorf("Expected error %v, but got %v", testCase.expectedError, err)
