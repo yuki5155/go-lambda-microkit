@@ -8,7 +8,7 @@ import (
 	"github.com/yuki5155/go-lambda-microkit/services"
 )
 
-var NewUserService = services.NewUserService
+var NewUserService func() services.IUserService = services.NewUserService
 
 func handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
 	var greeting string
@@ -21,9 +21,15 @@ func handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
 	}
 
 	user := NewUserService()
-	username := user.GetUser()
-	email := user.GetEmail()
-	fmt.Printf("User: %s, Email: %s\n", username, email)
+	username, err := user.GetUser()
+	if err != nil {
+		return events.APIGatewayProxyResponse{
+			Body:       err.Error(),
+			StatusCode: 500,
+		}, nil
+	}
+
+	fmt.Println(username)
 
 	return events.APIGatewayProxyResponse{
 		Body:       greeting,

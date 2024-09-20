@@ -5,19 +5,27 @@ import (
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/golang/mock/gomock"
+	"github.com/yuki5155/go-lambda-microkit/domains"
 	"github.com/yuki5155/go-lambda-microkit/mocks"
 	"github.com/yuki5155/go-lambda-microkit/services"
 )
 
+type mockServices struct {
+	userService *mocks.MockIUserService
+	// Add other service mocks here as needed
+}
+
 func TestHandler(t *testing.T) {
+	userDomain := domains.User{
+		Name:  "User",
+		Email: "Email",
+	}
 	testCases := []struct {
 		name          string
 		request       events.APIGatewayProxyRequest
 		expectedBody  string
 		expectedError error
-		mockUser      string
-		mockEmail     string
-		setupMock     func(*mocks.MockIUserService)
+		setupMocks    func(*mockServices)
 	}{
 		{
 			name: "empty IP",
@@ -29,11 +37,8 @@ func TestHandler(t *testing.T) {
 				},
 			},
 			expectedBody: "Hello, world!\n",
-			mockUser:     "MockUser1",
-			mockEmail:    "mock1@example.com",
-			setupMock: func(mockUserService *mocks.MockIUserService) {
-				mockUserService.EXPECT().GetUser().Return("MockUser1").Times(1)
-				mockUserService.EXPECT().GetEmail().Return("mock1@example.com").Times(1)
+			setupMocks: func(m *mockServices) {
+				m.userService.EXPECT().GetUser().Return(userDomain, nil).Times(1)
 			},
 		},
 		{
@@ -46,11 +51,8 @@ func TestHandler(t *testing.T) {
 				},
 			},
 			expectedBody: "Hello, 127.0.0.1!\n",
-			mockUser:     "MockUser2",
-			mockEmail:    "mock2@example.com",
-			setupMock: func(mockUserService *mocks.MockIUserService) {
-				mockUserService.EXPECT().GetUser().Return("MockUser2").Times(1)
-				mockUserService.EXPECT().GetEmail().Return("mock2@example.com").Times(1)
+			setupMocks: func(m *mockServices) {
+				m.userService.EXPECT().GetUser().Return(userDomain, nil).Times(1)
 			},
 		},
 	}
@@ -60,14 +62,21 @@ func TestHandler(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			mockUserService := mocks.NewMockIUserService(ctrl)
-			testCase.setupMock(mockUserService)
+			mocks := &mockServices{
+				userService: mocks.NewMockIUserService(ctrl),
+				// Initialize other service mocks here
+			}
 
+			testCase.setupMocks(mocks)
+
+			// Replace the original NewUserService function
 			origNewUserService := NewUserService
 			NewUserService = func() services.IUserService {
-				return mockUserService
+				return mocks.userService
 			}
 			defer func() { NewUserService = origNewUserService }()
+
+			// Add similar replacements for other services here
 
 			response, err := handler(testCase.request)
 			if err != testCase.expectedError {

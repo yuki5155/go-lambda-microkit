@@ -8,6 +8,7 @@ import (
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
+	domains "github.com/yuki5155/go-lambda-microkit/domains"
 )
 
 // MockIUserService is a mock of IUserService interface.
@@ -34,11 +35,12 @@ func (m *MockIUserService) EXPECT() *MockIUserServiceMockRecorder {
 }
 
 // GetEmail mocks base method.
-func (m *MockIUserService) GetEmail() string {
+func (m *MockIUserService) GetEmail() (string, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetEmail")
 	ret0, _ := ret[0].(string)
-	return ret0
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // GetEmail indicates an expected call of GetEmail.
@@ -48,11 +50,12 @@ func (mr *MockIUserServiceMockRecorder) GetEmail() *gomock.Call {
 }
 
 // GetUser mocks base method.
-func (m *MockIUserService) GetUser() string {
+func (m *MockIUserService) GetUser() (domains.User, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetUser")
-	ret0, _ := ret[0].(string)
-	return ret0
+	ret0, _ := ret[0].(domains.User)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // GetUser indicates an expected call of GetUser.
