@@ -14,38 +14,37 @@ import (
 )
 
 func init() {
-	// .envファイルを読み込む
 	if err := godotenv.Load(); err != nil {
 		log.Println("No .env file found")
 	}
 }
 
-func TestCognitoSIgnUp(t *testing.T) {
+func setupCognitoClient(t *testing.T) myaws.CognitoClientInterface {
 	cfg, err := config.LoadDefaultConfig(context.TODO(), config.WithRegion("us-east-1"))
 	if err != nil {
-		t.Errorf("failed to load configuration, %v", err)
+		t.Fatalf("failed to load configuration, %v", err)
 	}
 	client := cognitoidentityprovider.NewFromConfig(cfg)
 	if client == nil {
-		t.Errorf("failed to create Cognito client")
+		t.Fatalf("failed to create Cognito client")
 	}
 	cloudformationConf := cloudformation.NewFromConfig(cfg)
 
 	cloudFormationClient := myaws.NewCloudFormationClient(cloudformationConf)
 	userPoolID, err := cloudFormationClient.GetCloudFormationOutput(context.Background(), "cognito", "UserPoolId")
 	if err != nil {
-		t.Errorf("Failed to get CloudFormation output: %v", err)
-	} else {
-		t.Logf("UserPoolId: %s", userPoolID)
+		t.Fatalf("Failed to get CloudFormation output: %v", err)
 	}
 	userPoolClientId, err := cloudFormationClient.GetCloudFormationOutput(context.Background(), "cognito", "UserPoolClientId")
 	if err != nil {
-		t.Errorf("Failed to get CloudFormation output: %v", err)
-	} else {
-		t.Logf("UserPoolClientId: %s", userPoolClientId)
+		t.Fatalf("Failed to get CloudFormation output: %v", err)
 	}
 
-	cognitoClient := myaws.NewCognitoClient(client, userPoolClientId, userPoolID)
+	return myaws.NewCognitoClient(client, userPoolClientId, userPoolID)
+}
+
+func TestCognitoSignUp(t *testing.T) {
+	cognitoClient := setupCognitoClient(t)
 	username := os.Getenv("SAMPLEEMAILADDRESS")
 	password := os.Getenv("SAMPLEPASSWORD")
 	userSub, err := cognitoClient.SignUp(context.Background(), username, password)
@@ -54,5 +53,17 @@ func TestCognitoSIgnUp(t *testing.T) {
 	} else {
 		t.Logf("UserSub: %s", userSub)
 	}
+}
 
+func TestCognitoConfirmSignUp(t *testing.T) {
+	cognitoClient := setupCognitoClient(t)
+	username := os.Getenv("SAMPLEEMAILADDRESS")
+	confirmationCode := ""
+
+	err := cognitoClient.ConfirmSignUp(context.Background(), username, confirmationCode)
+	if err != nil {
+		t.Errorf("Failed to confirm sign up: %v", err)
+	} else {
+		t.Logf("Successfully confirmed sign up for user: %s", username)
+	}
 }
