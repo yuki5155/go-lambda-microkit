@@ -118,55 +118,59 @@ func TestCognitoWithAPIGW(t *testing.T) {
 	username := os.Getenv("SAMPLEEMAILADDRESS")
 	password := os.Getenv("SAMPLEPASSWORD")
 
-	// Get the access token using the current implementation
+	// Get the tokens
 	accessToken, idToken, err := cognitoClient.Login(context.Background(), username, password)
 	if err != nil {
 		t.Fatalf("Failed to login: %v", err)
 	}
 
 	if idToken == "" {
-		t.Fatal("No user token received")
+		t.Fatal("No ID token received")
 	}
-
-	t.Logf("Access Token: %s", accessToken)
-	t.Logf("ID Token: %s", idToken)
 
 	if accessToken == "" {
 		t.Fatal("No access token received")
 	}
 
-	apiURL := os.Getenv("AUTHORIZED_PATH")
+	// Get API URL
+	cfg, err := config.LoadDefaultConfig(context.TODO(), config.WithRegion("us-east-1"))
+	if err != nil {
+		t.Fatalf("Failed to load configuration: %v", err)
+	}
+
+	cloudFormationClient := myaws.NewCloudFormationClient(cloudformation.NewFromConfig(cfg))
+	apiURL, err := cloudFormationClient.GetCloudFormationOutput(context.Background(), "sample-app", "AuthorizedAPI")
+	if err != nil {
+		t.Fatalf("Failed to get CloudFormation output: %v", err)
+	}
+
 	if apiURL == "" {
 		t.Fatal("Authorized path not set")
 	}
-	// Function to make API request
-	makeRequest := func(token string) (*http.Response, error) {
-		req, err := http.NewRequest("GET", apiURL, nil)
-		if err != nil {
-			return nil, fmt.Errorf("failed to create request: %v", err)
-		}
-		req.Header.Add("Authorization", "Bearer "+token)
 
-		client := &http.Client{}
-		return client.Do(req)
-	}
-
-	// Try with Access Token
-	t.Log("Trying with Access Token")
-	respAccess, err := makeRequest(accessToken)
+	// Make API request
+	resp, err := makeAuthenticatedRequest(apiURL, idToken)
 	if err != nil {
-		t.Fatalf("Failed to make API request with Access Token: %v", err)
+		t.Fatalf("Failed to make API request: %v", err)
 	}
-	defer respAccess.Body.Close()
+	defer resp.Body.Close()
 
-	bodyAccess, _ := ioutil.ReadAll(respAccess.Body)
-	t.Logf("API Response Status (Access Token): %d", respAccess.StatusCode)
-	t.Logf("API Response Body (Access Token): %s", string(bodyAccess))
+	body, _ := ioutil.ReadAll(resp.Body)
+	t.Logf("API Response Status: %d", resp.StatusCode)
+	t.Logf("API Response Body: %s", string(body))
 
-	if respAccess.StatusCode != http.StatusOK {
-		t.Errorf("Access Token request failed. Status: %v", respAccess.Status)
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("API request failed. Status: %v", resp.Status)
 	}
+}
 
-	// Note: We can't test with ID Token in the current implementation
-	t.Log("Unable to test with ID Token in current implementation")
+func makeAuthenticatedRequest(url, token string) (*http.Response, error) {
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %v", err)
+	}
+	req.Header.Add("Authorization", "Bearer "+token)
+
+	client := &http.Client{}
+	return client.Do(req)
 }
