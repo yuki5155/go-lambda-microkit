@@ -80,3 +80,24 @@ func TestCognitoLogin(t *testing.T) {
 		t.Logf("Successfully logged in. Access Token: %s", accessToken)
 	}
 }
+
+func TestCognitoLogout(t *testing.T) {
+	cognitoClient := setupCognitoClient(t)
+	username := os.Getenv("SAMPLEEMAILADDRESS")
+	password := os.Getenv("SAMPLEPASSWORD")
+
+	// First, login to get an access token
+	accessToken, err := cognitoClient.Login(context.Background(), username, password)
+	if err != nil {
+		t.Fatalf("Failed to login: %v", err)
+	}
+
+	// Now, attempt to logout
+	err = cognitoClient.Logout(context.Background(), accessToken)
+	if err != nil {
+		t.Errorf("Failed to logout: %v", err)
+	} else {
+		t.Logf("Successfully logged out")
+	}
+
+}

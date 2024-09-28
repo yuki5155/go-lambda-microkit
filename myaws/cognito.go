@@ -11,12 +11,14 @@ type CognitoAPI interface {
 	SignUp(ctx context.Context, params *cognitoidentityprovider.SignUpInput, optFns ...func(*cognitoidentityprovider.Options)) (*cognitoidentityprovider.SignUpOutput, error)
 	ConfirmSignUp(ctx context.Context, params *cognitoidentityprovider.ConfirmSignUpInput, optFns ...func(*cognitoidentityprovider.Options)) (*cognitoidentityprovider.ConfirmSignUpOutput, error)
 	InitiateAuth(ctx context.Context, params *cognitoidentityprovider.InitiateAuthInput, optFns ...func(*cognitoidentityprovider.Options)) (*cognitoidentityprovider.InitiateAuthOutput, error)
+	GlobalSignOut(ctx context.Context, params *cognitoidentityprovider.GlobalSignOutInput, optFns ...func(*cognitoidentityprovider.Options)) (*cognitoidentityprovider.GlobalSignOutOutput, error)
 }
 
 type CognitoClientInterface interface {
 	SignUp(ctx context.Context, username, password string) (string, error)
 	ConfirmSignUp(ctx context.Context, username, confirmationCode string) error
 	Login(ctx context.Context, username, password string) (string, error)
+	Logout(ctx context.Context, accessToken string) error
 }
 
 type cognitoClient struct {
@@ -79,4 +81,13 @@ func (c *cognitoClient) Login(ctx context.Context, username, password string) (s
 	}
 
 	return *result.AuthenticationResult.AccessToken, nil
+}
+
+func (c *cognitoClient) Logout(ctx context.Context, accessToken string) error {
+	input := &cognitoidentityprovider.GlobalSignOutInput{
+		AccessToken: aws.String(accessToken),
+	}
+
+	_, err := c.API.GlobalSignOut(ctx, input)
+	return err
 }
