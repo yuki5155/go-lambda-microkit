@@ -67,3 +67,16 @@ func TestCognitoConfirmSignUp(t *testing.T) {
 		t.Logf("Successfully confirmed sign up for user: %s", username)
 	}
 }
+
+func TestCognitoLogin(t *testing.T) {
+	cognitoClient := setupCognitoClient(t)
+	username := os.Getenv("SAMPLEEMAILADDRESS")
+	password := os.Getenv("SAMPLEPASSWORD")
+
+	accessToken, err := cognitoClient.Login(context.Background(), username, password)
+	if err != nil {
+		t.Errorf("Failed to login: %v", err)
+	} else {
+		t.Logf("Successfully logged in. Access Token: %s", accessToken)
+	}
+}
