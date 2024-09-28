@@ -2,7 +2,10 @@ package myaws_test
 
 import (
 	"context"
+	"fmt"
+	"io/ioutil"
 	"log"
+	"net/http"
 	"os"
 	"testing"
 
@@ -73,12 +76,16 @@ func TestCognitoLogin(t *testing.T) {
 	username := os.Getenv("SAMPLEEMAILADDRESS")
 	password := os.Getenv("SAMPLEPASSWORD")
 
-	accessToken, err := cognitoClient.Login(context.Background(), username, password)
+	accessToken, userToke, err := cognitoClient.Login(context.Background(), username, password)
+	if userToke == "" {
+		t.Fatal("No user token received")
+	}
 	if err != nil {
 		t.Errorf("Failed to login: %v", err)
 	} else {
 		t.Logf("Successfully logged in. Access Token: %s", accessToken)
 	}
+	fmt.Println(accessToken)
 }
 
 func TestCognitoLogout(t *testing.T) {
@@ -87,9 +94,13 @@ func TestCognitoLogout(t *testing.T) {
 	password := os.Getenv("SAMPLEPASSWORD")
 
 	// First, login to get an access token
-	accessToken, err := cognitoClient.Login(context.Background(), username, password)
+	accessToken, userToken, err := cognitoClient.Login(context.Background(), username, password)
 	if err != nil {
 		t.Fatalf("Failed to login: %v", err)
+	}
+
+	if userToken == "" {
+		t.Fatal("No user token received")
 	}
 
 	// Now, attempt to logout
@@ -100,4 +111,66 @@ func TestCognitoLogout(t *testing.T) {
 		t.Logf("Successfully logged out")
 	}
 
+}
+
+func TestCognitoWithAPIGW(t *testing.T) {
+	cognitoClient := setupCognitoClient(t)
+	username := os.Getenv("SAMPLEEMAILADDRESS")
+	password := os.Getenv("SAMPLEPASSWORD")
+
+	// Get the tokens
+	accessToken, idToken, err := cognitoClient.Login(context.Background(), username, password)
+	if err != nil {
+		t.Fatalf("Failed to login: %v", err)
+	}
+
+	if idToken == "" {
+		t.Fatal("No ID token received")
+	}
+
+	if accessToken == "" {
+		t.Fatal("No access token received")
+	}
+
+	// Get API URL
+	cfg, err := config.LoadDefaultConfig(context.TODO(), config.WithRegion("us-east-1"))
+	if err != nil {
+		t.Fatalf("Failed to load configuration: %v", err)
+	}
+
+	cloudFormationClient := myaws.NewCloudFormationClient(cloudformation.NewFromConfig(cfg))
+	apiURL, err := cloudFormationClient.GetCloudFormationOutput(context.Background(), "sample-app", "AuthorizedAPI")
+	if err != nil {
+		t.Fatalf("Failed to get CloudFormation output: %v", err)
+	}
+
+	if apiURL == "" {
+		t.Fatal("Authorized path not set")
+	}
+
+	// Make API request
+	resp, err := makeAuthenticatedRequest(apiURL, idToken)
+	if err != nil {
+		t.Fatalf("Failed to make API request: %v", err)
+	}
+	defer resp.Body.Close()
+
+	body, _ := ioutil.ReadAll(resp.Body)
+	t.Logf("API Response Status: %d", resp.StatusCode)
+	t.Logf("API Response Body: %s", string(body))
+
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("API request failed. Status: %v", resp.Status)
+	}
+}
+
+func makeAuthenticatedRequest(url, token string) (*http.Response, error) {
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %v", err)
+	}
+	req.Header.Add("Authorization", "Bearer "+token)
+
+	client := &http.Client{}
+	return client.Do(req)
 }
