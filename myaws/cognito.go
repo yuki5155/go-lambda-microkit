@@ -2,6 +2,7 @@ package myaws
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/cognitoidentityprovider"
@@ -17,7 +18,7 @@ type CognitoAPI interface {
 type CognitoClientInterface interface {
 	SignUp(ctx context.Context, username, password string) (string, error)
 	ConfirmSignUp(ctx context.Context, username, confirmationCode string) error
-	Login(ctx context.Context, username, password string) (string, error)
+	Login(ctx context.Context, username, password string) (string, string, error) // Updated to return two strings
 	Logout(ctx context.Context, accessToken string) error
 }
 
@@ -61,7 +62,7 @@ func (c *cognitoClient) ConfirmSignUp(ctx context.Context, username, confirmatio
 	return err
 }
 
-func (c *cognitoClient) Login(ctx context.Context, username, password string) (string, error) {
+func (c *cognitoClient) Login(ctx context.Context, username, password string) (string, string, error) {
 	input := &cognitoidentityprovider.InitiateAuthInput{
 		AuthFlow: "USER_PASSWORD_AUTH",
 		AuthParameters: map[string]string{
@@ -73,14 +74,14 @@ func (c *cognitoClient) Login(ctx context.Context, username, password string) (s
 
 	result, err := c.API.InitiateAuth(ctx, input)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 
-	if result.AuthenticationResult == nil || result.AuthenticationResult.AccessToken == nil {
-		return "", nil
+	if result.AuthenticationResult == nil {
+		return "", "", fmt.Errorf("no authentication result")
 	}
 
-	return *result.AuthenticationResult.AccessToken, nil
+	return *result.AuthenticationResult.AccessToken, *result.AuthenticationResult.IdToken, nil
 }
 
 func (c *cognitoClient) Logout(ctx context.Context, accessToken string) error {
