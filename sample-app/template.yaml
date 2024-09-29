@@ -20,6 +20,12 @@ Parameters:
     Type: String
     Default: cognito
     Description: The name of the Cognito CloudFormation stack
+  CustomDomainName:
+    Type: String
+    Description: Custom domain name for the API (e.g., api.example.com)
+  HostedZoneId:
+    Type: String
+    Description: The Route 53 Hosted Zone ID for the domain
 
 Resources:
   ApiGatewayApi:
@@ -159,10 +165,42 @@ Resources:
         Ref: ApplicationResourceGroup
       AutoConfigurationEnabled: 'true'
 
+  Certificate:
+    Type: AWS::CertificateManager::Certificate
+    Properties:
+      DomainName: !Ref CustomDomainName
+      ValidationMethod: DNS
+
+  ApiGatewayCustomDomain:
+    Type: AWS::ApiGateway::DomainName
+    Properties:
+      DomainName: !Ref CustomDomainName
+      CertificateArn: !Ref Certificate
+  
+  ApiGatewayBasePathMapping:
+    Type: AWS::ApiGateway::BasePathMapping
+    Properties:
+      DomainName: !Ref ApiGatewayCustomDomain
+      RestApiId: !Ref ApiGatewayApi
+      Stage: Prod
+  
+  DNSRecord:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneId: !Ref HostedZoneId
+      Name: !Ref CustomDomainName
+      Type: A
+      AliasTarget:
+        DNSName: !GetAtt ApiGatewayCustomDomain.DistributionDomainName
+        HostedZoneId: Z2FDTNDATAQYW2
+
 Outputs:
   HelloWorldAPI:
     Description: API Gateway endpoint URL for Prod environment for First Function
     Value: !Sub "https://${ApiGatewayApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/hello/"
+  HelloWorldAPIwithCUSTOMDOMAIN:
+    Description: API Gateway endpoint URL for Prod environment for First Function with Custom Domain
+    Value: !Sub "https://${CustomDomainName}/hello/"
   HelloWorldFunction:
     Description: First Lambda Function ARN
     Value: !GetAtt HelloWorldFunction.Arn
@@ -172,3 +210,12 @@ Outputs:
   AuthorizedAPI:
     Description: API Gateway endpoint URL for Prod environment for Authorized Function
     Value: !Sub "https://${ApiGatewayApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/authorized-sample/"
+  ApiGatewayCustomDomainName:
+    Description: Custom domain name for the API
+    Value: !Ref ApiGatewayCustomDomain
+  ApiUrl:
+    Description: URL of the API
+    Value: !Sub https://${CustomDomainName}
+  CertificateArn:
+    Description: ARN of the created ACM Certificate
+    Value: !Ref Certificate
