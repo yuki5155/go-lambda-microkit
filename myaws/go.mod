@@ -1,20 +1,13 @@
-require github.com/aws/aws-lambda-go v1.47.0
-
-replace gopkg.in/yaml.v2 => gopkg.in/yaml.v2 v2.2.8
-
 require (
+	github.com/aws/aws-sdk-go-v2 v1.31.0
 	github.com/aws/aws-sdk-go-v2/config v1.27.39
 	github.com/aws/aws-sdk-go-v2/service/cloudformation v1.54.3
 	github.com/aws/aws-sdk-go-v2/service/cognitoidentityprovider v1.45.3
-	github.com/golang/mock v1.6.0
 	github.com/joho/godotenv v1.5.1
-	github.com/yuki5155/go-lambda-microkit v0.0.0-unpublished
-	github.com/yuki5155/go-lambda-microkit/myaws v0.0.0-unpublished
-	github.com/yuki5155/go-lambda-microkit/utils v0.0.0-unpublished
+	github.com/yuki5155/go-lambda-microkit v0.0.0-20240928215600-20aa941fbb0c
 )
 
 require (
-	github.com/aws/aws-sdk-go-v2 v1.31.0 // indirect
 	github.com/aws/aws-sdk-go-v2/credentials v1.17.37 // indirect
 	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.16.14 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/configsources v1.3.18 // indirect
@@ -26,15 +19,12 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.27.3 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sts v1.31.3 // indirect
 	github.com/aws/smithy-go v1.21.0 // indirect
+	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 )
 
-replace github.com/yuki5155/go-lambda-microkit => ../
+replace gopkg.in/yaml.v2 => gopkg.in/yaml.v2 v2.2.8
 
-replace github.com/yuki5155/go-lambda-microkit/myaws => ../../myaws
-
-replace github.com/yuki5155/go-lambda-microkit/utils => ../../utils
-
-module hello-world
+module myaws
 
 go 1.21.3
