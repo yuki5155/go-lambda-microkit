@@ -1,13 +1,22 @@
 package main
 
 import (
+	"context"
+	"log"
+	"net/http"
 	"testing"
 
 	"github.com/aws/aws-lambda-go/events"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/service/cloudformation"
+	"github.com/aws/aws-sdk-go-v2/service/cognitoidentityprovider"
 	"github.com/golang/mock/gomock"
+	"github.com/joho/godotenv"
 	"github.com/yuki5155/go-lambda-microkit/domains"
 	"github.com/yuki5155/go-lambda-microkit/mocks"
+	"github.com/yuki5155/go-lambda-microkit/myaws"
 	"github.com/yuki5155/go-lambda-microkit/services"
+	"github.com/yuki5155/go-lambda-microkit/utils"
 )
 
 type mockServices struct {
@@ -91,5 +100,43 @@ func TestHandler(t *testing.T) {
 				t.Errorf("Expected status code 200, but got %v", response.StatusCode)
 			}
 		})
+	}
+}
+
+func init() {
+	if err := godotenv.Load(); err != nil {
+		log.Println("No .env file found")
+	}
+}
+
+func getEndPoint() string {
+	cfg, err := config.LoadDefaultConfig(context.TODO(), config.WithRegion("us-east-1"))
+	if err != nil {
+		log.Fatalf("failed to load configuration, %v", err)
+	}
+	client := cognitoidentityprovider.NewFromConfig(cfg)
+	if client == nil {
+		log.Fatalf("failed to create Cognito client")
+	}
+	cloudformationConf := cloudformation.NewFromConfig(cfg)
+
+	cloudFormationClient := myaws.NewCloudFormationClient(cloudformationConf)
+	endpoint, err := cloudFormationClient.GetCloudFormationOutput(context.Background(), "sample-app", "HelloWorldAPIwithCUSTOMDOMAIN")
+	if err != nil {
+		log.Fatalf("Failed to get CloudFormation output: %v", err)
+	}
+
+	return endpoint
+}
+
+func TestSendRequest(t *testing.T) {
+	endPoint := getEndPoint()
+	httpUtils := utils.NewHTTPRequestsUtils()
+	resp, err := httpUtils.Get(endPoint)
+	if err != nil {
+		t.Fatalf("Failed to send request: %v", err)
+	}
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("Expected status code 200, but got %v", resp.StatusCode)
 	}
 }
