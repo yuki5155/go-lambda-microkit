@@ -50,5 +50,13 @@ ENV GO111MODULE=on
 # ソースコードをコピー
 COPY . .
 
+# Node.jsとnpmをインストール
+RUN curl -fsSL https://deb.nodesource.com/setup_lts.x | bash - \
+    && apt-get install -y nodejs
+
+# Vue CLIをインストール
+RUN npm install -g @vue/cli
+
+
 # デフォルトコマンドを設定（シェルを起動）
 CMD ["/bin/bash"]
