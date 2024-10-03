@@ -1,14 +1,17 @@
 <template>
     <div class="login">
       <h1>ログイン</h1>
-      <LoginForm @login="handleLogin" />
+      <LoginForm @login="handleLogin" :isLoading="isLoading" />
       <p v-if="errorMessage" class="error-message">{{ errorMessage }}</p>
     </div>
   </template>
   
   <script lang="ts">
   import { defineComponent, ref } from 'vue'
+  import { useRouter } from 'vue-router'
   import LoginForm from '@/components/LoginForm.vue'
+  import authService, { LoginCredentials } from '@/services/authService'
+  import { setAuthToken, setUserData } from '@/utils/utils'
   
   export default defineComponent({
     name: 'LoginView',
@@ -17,19 +20,32 @@
     },
     setup() {
       const errorMessage = ref('')
+      const isLoading = ref(false)
+      const router = useRouter()
   
-      const handleLogin = (credentials: { email: string; password: string }) => {
-        // ここにログインロジックを実装します
-        console.log('ログイン試行:', credentials.email, credentials.password)
-        // 例: APIリクエストを送信し、応答を処理します
-        // 成功した場合はユーザーをリダイレクトし、失敗した場合はエラーメッセージを表示します
-        errorMessage.value = '' // リセット
-        // 仮のエラーメッセージ
-        errorMessage.value = 'ログインに失敗しました。認証情報を確認してください。'
+      const handleLogin = async (credentials: LoginCredentials) => {
+        isLoading.value = true
+        errorMessage.value = ''
+  
+        try {
+          const response = await authService.login(credentials)
+          setAuthToken(response.token)
+          setUserData(response.user)
+          router.push('/') // ログイン後のリダイレクト先
+        } catch (error) {
+          if (error instanceof Error) {
+            errorMessage.value = error.message
+          } else {
+            errorMessage.value = 'ログイン中に予期せぬエラーが発生しました'
+          }
+        } finally {
+          isLoading.value = false
+        }
       }
   
       return {
         errorMessage,
+        isLoading,
         handleLogin
       }
     }
