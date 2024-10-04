@@ -18,3 +18,7 @@ sam deploy --parameter-overrides CognitoStackName=cognito --capabilities CAPABIL
 vue
 
 https://qiita.com/__knm__/items/d3732e944f42c3cca70d
+
+```
+npm run dev
+```

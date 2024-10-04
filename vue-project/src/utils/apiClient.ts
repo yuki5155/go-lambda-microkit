@@ -11,7 +11,9 @@ const apiClient: AxiosInstance = axios.create({
   baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
+    'Origin': window.location.origin,
   },
+  withCredentials: true,
 });
 
 export const handleApiError = (error: unknown): never => {
