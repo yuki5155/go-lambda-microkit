@@ -26,7 +26,7 @@ func handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
 	}
 
 	response := map[string]interface{}{
-		"token": "mock-token-12345",
+		"token": "mock-token-123456",
 		"user": map[string]string{
 			"name":  user.Name,
 			"email": user.Email,

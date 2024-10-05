@@ -12,7 +12,14 @@ func CORSMiddleware() Middleware {
 	return func(next LambdaHandler) LambdaHandler {
 		return func(req events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
 			allowedOrigins := strings.Split(os.Getenv("ALLOWED_ORIGINS"), ",")
-			origin := req.Headers["origin"]
+			origin := ""
+			// Check for 'Origin' header (case-insensitive)
+			for key, value := range req.Headers {
+				if strings.ToLower(key) == "origin" {
+					origin = value
+					break
+				}
+			}
 
 			log.Printf("Received request with Origin: %s", origin)
 			log.Printf("Allowed Origins: %v", allowedOrigins)
