@@ -21,55 +21,55 @@ var NewUserService func(cognitoClient myaws.CognitoClientInterface) services.IUs
 var cognitoClient myaws.CognitoClientInterface
 
 func init() {
-	// Load the AWS SDK configuration
 	cfg, err := config.LoadDefaultConfig(context.Background())
 	if err != nil {
 		log.Fatalf("Failed to load AWS config: %v", err)
 	}
 
-	// Create the Cognito service client
 	cognitoAPI := cognitoidentityprovider.NewFromConfig(cfg)
 
-	// Get the Client ID and User Pool ID from environment variables
+	fmt.Println("COGNITO_CLIENT_ID: ", os.Getenv("COGNITO_CLIENT_ID"))
+
 	clientID := os.Getenv("COGNITO_CLIENT_ID")
 	userPoolID := os.Getenv("COGNITO_USER_POOL_ID")
 
 	if clientID == "" || userPoolID == "" {
-		log.Println("COGNITO_CLIENT_ID and/or COGNITO_USER_POOL_ID are not set")
-		log.Printf("COGNITO_CLIENT_ID set: %v", clientID != "")
-		log.Printf("COGNITO_USER_POOL_ID set: %v", userPoolID != "")
-		// Instead of fatal, we'll continue with nil cognitoClient
-		cognitoClient = nil
-	} else {
-		// Initialize the Cognito client
-		cognitoClient = myaws.NewCognitoClient(cognitoAPI, clientID, userPoolID)
-		log.Println("Cognito client initialized successfully")
+		log.Fatalf("COGNITO_CLIENT_ID and/or COGNITO_USER_POOL_ID are not set")
 	}
+
+	cognitoClient = myaws.NewCognitoClient(cognitoAPI, clientID, userPoolID)
+	log.Println("Cognito client initialized successfully")
 }
 
 func handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
-	log.Printf("Received request: %+v", request)
+	log.Printf("Received login request: %+v", request)
 
-	if cognitoClient == nil {
-		log.Println("Cognito client is not initialized")
+	var loginRequest struct {
+		Username string `json:"username"`
+		Password string `json:"password"`
+	}
+
+	err := json.Unmarshal([]byte(request.Body), &loginRequest)
+	if err != nil {
+		log.Printf("Error unmarshaling request body: %v", err)
 		return events.APIGatewayProxyResponse{
-			Body:       "Internal Server Error: Cognito client not initialized",
-			StatusCode: 500,
+			Body:       "Invalid request body",
+			StatusCode: 400,
 		}, nil
 	}
 
 	userService := NewUserService(cognitoClient)
-	user, err := userService.GetUser()
+	user, err := userService.Login(context.Background(), loginRequest.Username, loginRequest.Password)
 	if err != nil {
-		log.Printf("Error getting user: %v", err)
+		log.Printf("Login error: %v", err)
 		return events.APIGatewayProxyResponse{
-			Body:       fmt.Sprintf("Error getting user: %v", err),
-			StatusCode: 500,
+			Body:       "Login failed",
+			StatusCode: 401,
 		}, nil
 	}
 
 	response := map[string]interface{}{
-		"token": "mock-token-123456",
+		"token": user.IDToken,
 		"user": map[string]string{
 			"name":  user.Name,
 			"email": user.Email,

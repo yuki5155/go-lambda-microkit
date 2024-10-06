@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"net/http"
@@ -17,7 +18,9 @@ type HTTPResponse struct {
 type HTTPRequestsUtils interface {
 	// Get は指定されたURLにGETリクエストを送信し、HTTPResponseを返します
 	Get(url string) (*HTTPResponse, error)
-	// ここに他のHTTPメソッド（POST, PUT, DELETE など）を追加できます
+	// Post は指定されたURLにPOSTリクエストを送信し、HTTPResponseを返します
+	Post(url string, contentType string, body []byte) (*HTTPResponse, error)
+	// ここに他のHTTPメソッド（PUT, DELETE など）を追加できます
 }
 
 // httpRequestsUtils は HTTPRequestsUtils インターフェースの実装構造体です
@@ -52,5 +55,25 @@ func (h *httpRequestsUtils) Get(url string) (*HTTPResponse, error) {
 	}, nil
 }
 
+// Post メソッドの実装
+func (h *httpRequestsUtils) Post(url string, contentType string, body []byte) (*HTTPResponse, error) {
+	resp, err := h.client.Post(url, contentType, bytes.NewBuffer(body))
+	if err != nil {
+		return nil, fmt.Errorf("error making POST request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	respBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("error reading response body: %w", err)
+	}
+
+	return &HTTPResponse{
+		StatusCode: resp.StatusCode,
+		Body:       respBody,
+		Header:     resp.Header,
+	}, nil
+}
+
 // 他のHTTPメソッドの実装をここに追加できます
-// 例: Post, Put, Delete など
+// 例: Put, Delete など

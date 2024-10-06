@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 	"net/http"
+	"os"
 	"testing"
 
 	"github.com/aws/aws-lambda-go/events"
@@ -80,7 +81,7 @@ func TestHandler(t *testing.T) {
 
 			// Replace the original NewUserService function
 			origNewUserService := NewUserService
-			NewUserService = func() services.IUserService {
+			NewUserService = func(cognitoClient myaws.CognitoClientInterface) services.IUserService {
 				return mocks.userService
 			}
 			defer func() { NewUserService = origNewUserService }()
@@ -107,6 +108,32 @@ func init() {
 	if err := godotenv.Load(); err != nil {
 		log.Println("No .env file found")
 	}
+
+	// Load AWS configuration
+	cfg, err := config.LoadDefaultConfig(context.Background(), config.WithRegion("us-east-1"))
+	if err != nil {
+		log.Fatalf("Failed to load AWS configuration: %v", err)
+	}
+
+	// Create CloudFormation client
+	cloudFormationClient := myaws.NewCloudFormationClient(cloudformation.NewFromConfig(cfg))
+
+	// Get UserPoolId from CloudFormation output
+	userPoolID, err := cloudFormationClient.GetCloudFormationOutput(context.Background(), "cognito", "UserPoolId")
+	if err != nil {
+		log.Fatalf("Failed to get UserPoolId: %v", err)
+	}
+	os.Setenv("COGNITO_USER_POOL_ID", userPoolID)
+
+	// Get UserPoolClientId from CloudFormation output
+	userPoolClientID, err := cloudFormationClient.GetCloudFormationOutput(context.Background(), "cognito", "UserPoolClientId")
+	if err != nil {
+		log.Fatalf("Failed to get UserPoolClientId: %v", err)
+	}
+	os.Setenv("COGNITO_CLIENT_ID", userPoolClientID)
+
+	log.Printf("COGNITO_USER_POOL_ID set to: %s", userPoolID)
+	log.Printf("COGNITO_CLIENT_ID set to: %s", userPoolClientID)
 }
 
 func getEndPoint() string {
