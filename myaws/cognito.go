@@ -15,6 +15,7 @@ type CognitoAPI interface {
 	GlobalSignOut(ctx context.Context, params *cognitoidentityprovider.GlobalSignOutInput, optFns ...func(*cognitoidentityprovider.Options)) (*cognitoidentityprovider.GlobalSignOutOutput, error)
 }
 
+// /root/go/bin/mockgen -source=myaws/cognito.go -destination=sample-app/mocks/mock_cognito_client.go -package=mocks
 type CognitoClientInterface interface {
 	SignUp(ctx context.Context, username, password string) (string, error)
 	ConfirmSignUp(ctx context.Context, username, confirmationCode string) error

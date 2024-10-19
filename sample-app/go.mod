@@ -1,11 +1,20 @@
 module github.com/yuki5155/go-lambda-microkit
 
-go 1.19
+go 1.21.3
 
 require (
-	github.com/golang/mock v1.6.0 // indirect
-	golang.org/x/mod v0.4.2 // indirect
-	golang.org/x/sys v0.0.0-20210510120138-977fb7262007 // indirect
-	golang.org/x/tools v0.1.1 // indirect
-	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
+	github.com/golang/mock v1.6.0
+	github.com/yuki5155/go-lambda-microkit/myaws v0.0.0-unpublished
 )
+
+require (
+	github.com/aws/aws-sdk-go-v2 v1.31.0 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/configsources v1.3.18 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.6.18 // indirect
+	github.com/aws/aws-sdk-go-v2/service/cloudformation v1.54.3 // indirect
+	github.com/aws/aws-sdk-go-v2/service/cognitoidentityprovider v1.45.3 // indirect
+	github.com/aws/smithy-go v1.21.0 // indirect
+	github.com/jmespath/go-jmespath v0.4.0 // indirect
+)
+
+replace github.com/yuki5155/go-lambda-microkit/myaws => ../myaws

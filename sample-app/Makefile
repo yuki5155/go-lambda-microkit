@@ -17,6 +17,10 @@ ifndef CUSTOM_DOMAIN
 $(error CUSTOM_DOMAIN is not set)
 endif
 
+ifndef ALLOW_ORIGIN
+$(error ALLOW_ORIGIN is not set)
+endif
+
 # Default target
 .PHONY: deploy
 
@@ -27,4 +31,5 @@ deploy:
 			CustomDomainName=$(CUSTOM_DOMAIN) \
 			HostedZoneId=$(HOSTED_ZONE_ID) \
 			CognitoStackName=$(COGNITO_STACK_NAME) \
+			AllowedOrigins=$(ALLOW_ORIGIN) \
 		--disable-rollback false
