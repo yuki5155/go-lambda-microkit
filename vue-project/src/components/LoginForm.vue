@@ -23,7 +23,7 @@
       const password = ref('')
   
       const handleSubmit = () => {
-        emit('login', { email: email.value, password: password.value })
+        emit('login', { username: email.value, password: password.value })
       }
   
       return {
